@@ -1,25 +1,24 @@
-function extractMainText() {
-  const articleTags = document.querySelectorAll('article');
-  let articleText = '';
+(function () {
+  // Clone the current document for Readability to safely parse
+  const articleDoc = document.cloneNode(true);
 
-  if (articleTags.length > 0) {
-    articleTags.forEach(article => {
-      articleText += article.innerText + '\n';
+  // Use Readability to extract article text
+  const reader = new Readability(articleDoc);
+  const article = reader.parse();
+
+  const articleText = article?.textContent?.trim();
+
+  console.log("📄 Extracted article text:", articleText);
+
+  if (articleText && articleText.length > 100) {
+    // Send to background script
+    chrome.runtime.sendMessage({
+      type: 'EXTRACTED_ARTICLE_TEXT',
+      data: articleText
+    }, () => {
+      console.log("✅ Sent article text to background.");
     });
   } else {
-    const paragraphs = Array.from(document.querySelectorAll('p'))
-      .filter(p => p.innerText.length > 50);
-    paragraphs.forEach(p => {
-      articleText += p.innerText + '\n';
-    });
+    console.warn("⚠️ No meaningful article content found.");
   }
-
-  return articleText.trim();
-}
-
-const extractedText = extractMainText();
-
-chrome.runtime.sendMessage({
-  type: 'EXTRACTED_ARTICLE_TEXT',
-  data: extractedText
-});
+})();
